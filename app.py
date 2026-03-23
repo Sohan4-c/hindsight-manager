@@ -522,9 +522,10 @@ def retain_interaction(user_message: str, ai_response: str) -> None:
         return
     try:
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        ai_safe = ai_response if isinstance(ai_response, str) else ""
         record = (
             f"Project manager decision — User request: '{user_message}' | "
-            f"AI recommendation: '{ai_response[:400]}'"
+            f"AI recommendation: '{ai_safe[:400]}'"
         )
 
         async def _retain():
@@ -626,7 +627,16 @@ def run_agent(groq_client, messages: list[dict]) -> str:
             temperature=0.4,   # lower temp = more deterministic, less "thinking aloud"
             max_tokens=1024,
         )
-        return response.choices[0].message.content or "No response generated."
+        content = response.choices[0].message.content
+        if isinstance(content, str) and content.strip():
+            # Robustly ensure no internal monologue leaked through
+            processed = content.strip()
+            if processed.startswith(("Okay,", "Sure,", "Let me think", "I need to check")):
+                 # If monologue is detected, try to find the actual response
+                 if "\n\n" in processed:
+                     processed = processed.split("\n\n", 1)[-1].strip()
+            return processed
+        return "No response generated."
     except Exception as exc:
         err = str(exc)
         if "model" in err.lower() and ("not found" in err.lower() or "404" in err.lower()):
@@ -701,16 +711,36 @@ def render_sidebar(hindsight_ready: bool) -> None:
         )
 
         for member in TEAM_DATA:
-            label, badge_class = STATUS_LABELS[member["status"]]
+            # Type-safe status lookup
+            raw_status = member.get("status", "Pending")
+            status_key = str(raw_status) if isinstance(raw_status, (str, int)) else "Pending"
+            label, badge_class = STATUS_LABELS.get(status_key, ("Pending", "badge-pending"))
+            
+            # Type-safe field retrieval
+            raw_name = member.get("name", "Unknown")
+            name = str(raw_name) if isinstance(raw_name, (str, int)) else "Unknown"
+            
+            raw_avatar = member.get("avatar")
+            avatar = str(raw_avatar) if isinstance(raw_avatar, str) and raw_avatar else name[0]
+            
+            raw_role = member.get("role", "Team Member")
+            role = str(raw_role) if isinstance(raw_role, (str, int)) else "Team Member"
+            
+            raw_task = member.get("task", "No active task")
+            task = str(raw_task) if isinstance(raw_task, (str, int)) else "No active task"
+            
+            raw_progress = member.get("progress", 0)
+            progress = int(raw_progress) if isinstance(raw_progress, (int, float, str)) and str(raw_progress).isdigit() else 0
+
             st.markdown(
                 f"""
                 <div class="member-card">
-                    <div class="member-name">{member['avatar']} {member['name']}</div>
-                    <div class="member-role">{member['role']}</div>
-                    <div class="member-task">📌 {member['task']}</div>
+                    <div class="member-name">{avatar} {name}</div>
+                    <div class="member-role">{role}</div>
+                    <div class="member-task">📌 {task}</div>
                     <span class="badge {badge_class}">{label}</span>
                     <div class="progress-wrap">
-                        <div class="progress-fill" style="width:{member['progress']}%"></div>
+                        <div class="progress-fill" style="width:{progress}%"></div>
                     </div>
                 </div>
                 """,
