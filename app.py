@@ -21,9 +21,18 @@ from dotenv import load_dotenv
 # ── Load environment ──────────────────────────────────────
 load_dotenv()
 
-GROQ_API_KEY        = os.getenv("GROQ_API_KEY", "")
-HINDSIGHT_API_KEY   = os.getenv("HINDSIGHT_API_KEY", "")
-HINDSIGHT_BASE_URL  = os.getenv("HINDSIGHT_BASE_URL", "https://api.hindsight.io")
+def get_secret(key: str, default: str = "") -> str:
+    """Helper to fetch from Streamlit secrets (Cloud) or os.environ (Local)."""
+    try:
+        if key in st.secrets:
+            return st.secrets[key]
+    except FileNotFoundError:
+        pass
+    return os.getenv(key, default)
+
+GROQ_API_KEY        = get_secret("GROQ_API_KEY")
+HINDSIGHT_API_KEY   = get_secret("HINDSIGHT_API_KEY")
+HINDSIGHT_BASE_URL  = get_secret("HINDSIGHT_BASE_URL", "https://api.hindsight.io")
 LLM_MODEL           = "qwen/qwen3-32b"
 HINDSIGHT_BANK      = "project-manager-v1"
 
