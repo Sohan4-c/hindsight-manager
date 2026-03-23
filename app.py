@@ -23,12 +23,18 @@ load_dotenv()
 
 def get_secret(key: str, default: str = "") -> str:
     """Helper to fetch from Streamlit secrets (Cloud) or os.environ (Local)."""
+    val = ""
     try:
         if key in st.secrets:
-            return st.secrets[key]
+            val = str(st.secrets[key])
     except FileNotFoundError:
         pass
-    return os.getenv(key, default)
+    
+    if not val:
+        val = os.getenv(key, default)
+        
+    # Strip any accidental literal quotes or spaces from TOML parsing
+    return val.strip('"\' ')
 
 GROQ_API_KEY        = get_secret("GROQ_API_KEY")
 HINDSIGHT_API_KEY   = get_secret("HINDSIGHT_API_KEY")
