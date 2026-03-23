@@ -39,7 +39,7 @@ Unlike standard, stateless RAG systems, we use Hindsight to create a robust **"M
 
 ### 📐 Project Architecture
 
-The diagram below illustrates how we transition from "Existing Agent Systems" (Stateless) to "Vectorize-Powered Agentic Memory" (Stateful) using **Contextualization**, **RAG Operations**, and **Memory Management**.
+The diagram below illustrates how we transition from "Existing Agent Systems" (Stateless) to "Vectorize-Powered Agentic Memory" (Stateful) using **Contextualization**, **RAG Operations**, and **Memory Management**(./Architecture.jpeg)
 
 ### 💻 Implementation Example
 
